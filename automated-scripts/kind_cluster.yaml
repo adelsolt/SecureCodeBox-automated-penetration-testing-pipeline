@@ -1,0 +1,23 @@
+# Deploying a Kind Cluster 
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: kind
+nodes:
+- role: control-plane
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
+  extraPortMappings:
+  - containerPort: 80
+    hostPort: 8080
+    protocol: TCP
+  - containerPort: 443
+    hostPort: 44300
+    protocol: TCP
+- role: worker
+
+# run with "sudo kind create cluster --config=kind-cluster.yaml --name=kind-kubernetes-cluster"
+# ensuring deployment with "kubectl get nodes"
