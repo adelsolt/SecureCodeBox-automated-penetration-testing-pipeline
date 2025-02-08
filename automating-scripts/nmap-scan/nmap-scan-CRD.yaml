@@ -1,0 +1,12 @@
+apiVersion: "execution.securecodebox.io/v1"
+kind: Scan
+metadata:
+  name: "nmap-scanme.nmap.org"
+spec:
+  scanType: "nmap"
+  parameters:
+    - scanme.nmap.org
+
+# Running the scan with "kubectl apply -f nmap-scan-cdr.yaml" 
+# Track it with "kubectl get scans" 
+# Scan overview with "kubectl describe scan nmap-scanme.nmap.org"

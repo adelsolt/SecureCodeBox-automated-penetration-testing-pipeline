@@ -46,9 +46,15 @@ jq --version
 # SecureCodeBox Operator
 helm --namespace securecodebox-system upgrade --install --create-namespace securecodebox-operator oci://ghcr.io/securecodebox/helm/operator
         # Verified deployment with "sudo kubectl get pods -n securecodebox-system"
-        # Port Forward MinIo instance with "kubectl port-forward -n securecodebox-system service/securecodebox-operator-minio 9000:9001"
-        # Credientials (admin/password) with "AccessKey (Username): kubectl get secret securecodebox-operator-minio -n securecodebox-system -o=jsonpath='{.data.root-user}' | base64 --decode; echo"
-        #                  "SecretKey (Password): kubectl get secret securecodebox-operator-minio -n securecodebox-system -o=jsonpath='{.data.root-password}' | base64 --decode; echo"
+        # Port Forward MinIo instance with 
+        kubectl port-forward -n securecodebox-system service/securecodebox-operator-minio --address 0.0.0.0 9001:9001
+
+        # "AccessKey (admin): sudo kubectl get secret securecodebox-operator-minio -n securecodebox-system -o=jsonpath='{.data.root-user}' | base64 --decode; echo"
+        # "SecretKey (Password): kubectl get secret securecodebox-operator-minio -n securecodebox-system -o=jsonpath='{.data.root-password}' | base64 --decode; echo"
+
+
+
+
 
 # Installing SCB scanners(this is a list of multiple scanners i will only using nmap, zap, nikto)
 #helm upgrade --install amass oci://ghcr.io/securecodebox/helm/amass
@@ -61,7 +67,12 @@ helm upgrade --install nmap oci://ghcr.io/securecodebox/helm/nmap
 #helm upgrade --install trivy oci://ghcr.io/securecodebox/helm/trivy
 #helm upgrade --install wpscan oci://ghcr.io/securecodebox/helm/wpscan
 helm upgrade --install zap oci://ghcr.io/securecodebox/helm/zap
+helm upgrade --install zap-advanced oci://ghcr.io/securecodebox/helm/zap-advanced
+# Listing installed scanners "kubectl get scantypes"
+
 
 # Installing Vulnerable Scanning Target Target 
-helm upgrade --install juice-shop oci://ghcr.io/securecodebox/helm/juice-shop
+helm upgrade --install juice-shop oci://ghcr.io/securecodebox/helm/juice-shop  # Apply port forwarding "kubectl --namespace default port-forward service/juice-shop 3000:3000"
 #helm upgrade --install old-wordpress oci://ghcr.io/securecodebox/helm/old-wordpress
+
+
