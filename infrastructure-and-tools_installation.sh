@@ -21,6 +21,15 @@ rm -rf kind
 
 kind --version
 
+# Ingress controller
+        kubectl apply -f https://kind.sigs.k8s.io/examples/ingress/deploy-ingress-nginx.yaml
+        kubectl wait --namespace kube-system \
+        --for=condition=ready pod \
+        --selector=app.kubernetes.io/component=controller \
+        --timeout=90s
+        kubectl get svc -n ingress-nginx
+
+
 # Helm
 curl -fsSL https://baltocdn.com/helm/signing.asc | sudo tee /etc/apt/keyrings/helm.asc > /dev/null
 sudo apt install -y apt-transport-https
@@ -71,8 +80,16 @@ helm upgrade --install zap-advanced oci://ghcr.io/securecodebox/helm/zap-advance
 # Listing installed scanners "kubectl get scantypes"
 
 
-# Installing Vulnerable Scanning Target Target 
-helm upgrade --install juice-shop oci://ghcr.io/securecodebox/helm/juice-shop  # Apply port forwarding "kubectl --namespace default port-forward service/juice-shop 3000:3000"
-#helm upgrade --install old-wordpress oci://ghcr.io/securecodebox/helm/old-wordpress
+# Installing Vulnerable Scanning Targets 
+
+## Installing juice-shop-app
+kubectl create namespace juice-shop-app
+helm upgrade --install juice-shop oci://ghcr.io/securecodebox/helm/juice-shop --namespace juice-shop-app 
+kubectl apply -f juice-shop-ingress.yaml # alternativly we can use a port forwarding with "kubectl --namespace juice-shop-app port-forward service/juice-shop 3000:3000"
+kubectl describe ingress juice-shop-ingress -n juice-shop-app
+
+
+kubectl create namespace old-wordpress-app
+helm upgrade --install old-wordpress oci://ghcr.io/securecodebox/helm/old-wordpress --namespace old-wordpress-app
 
 

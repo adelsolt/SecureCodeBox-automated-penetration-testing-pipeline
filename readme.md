@@ -22,3 +22,16 @@ Get scan findings:
 
 Checking the available scan types:
     kubectl get scantypes -n default
+
+Get all kubernetes deployment:
+    kubectl get deployments --all-namespaces
+
+Delete a deployment:
+    kubectl delete -n NAMESPACE deployment DEPLOYMENT
+
+Creating a unique namespace for each vulnerable apps:
+    kubectl create namespace my-namespace
+
+Checking the ingress controller service:
+    kubectl get svc -n ingress-nginx
+
