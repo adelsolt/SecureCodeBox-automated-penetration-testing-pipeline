@@ -129,10 +129,4 @@ spec:
       configMap:
         name: zap-advanced-scan-config
 
-
-
-
-
-# Running the scan with "kubectl apply -f zap-scan-crd.yaml" 
-# Track it with "kubectl get scans" 
-# Scan overview with "kubectl describe scan nmap-scanme.nmap.org"
+# Apply with "kubectl apply -f zap-advenced-scan-crd.yaml"

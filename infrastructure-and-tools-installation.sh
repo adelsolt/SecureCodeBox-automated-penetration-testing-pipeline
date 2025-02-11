@@ -21,14 +21,6 @@ rm -rf kind
 
 kind --version
 
-# Ingress controller
-        kubectl apply -f https://kind.sigs.k8s.io/examples/ingress/deploy-ingress-nginx.yaml
-        kubectl wait --namespace kube-system \
-        --for=condition=ready pod \
-        --selector=app.kubernetes.io/component=controller \
-        --timeout=90s
-        kubectl get svc -n ingress-nginx
-
 
 # Helm
 curl -fsSL https://baltocdn.com/helm/signing.asc | sudo tee /etc/apt/keyrings/helm.asc > /dev/null
@@ -51,45 +43,73 @@ sudo apt install -y jq
 jq --version
 
 
+# Ingress controller
+        kubectl apply -f https://kind.sigs.k8s.io/examples/ingress/deploy-ingress-nginx.yaml
+        kubectl wait --namespace kube-system \
+        --for=condition=ready pod \
+        --selector=app.kubernetes.io/component=controller \
+        --timeout=90s
+        kubectl get svc -n ingress-nginx
+
 
 # SecureCodeBox Operator
 helm --namespace securecodebox-system upgrade --install --create-namespace securecodebox-operator oci://ghcr.io/securecodebox/helm/operator
         # Verified deployment with "sudo kubectl get pods -n securecodebox-system"
-        # Port Forward MinIo instance with 
-        kubectl port-forward -n securecodebox-system service/securecodebox-operator-minio --address 0.0.0.0 9001:9001
-
+        # Port Forward MinIo instance with "kubectl port-forward -n securecodebox-system service/securecodebox-operator-minio --address 0.0.0.0 9001:9001"
         # "AccessKey (admin): sudo kubectl get secret securecodebox-operator-minio -n securecodebox-system -o=jsonpath='{.data.root-user}' | base64 --decode; echo"
         # "SecretKey (Password): kubectl get secret securecodebox-operator-minio -n securecodebox-system -o=jsonpath='{.data.root-password}' | base64 --decode; echo"
 
 
-
-
-
 # Installing SCB scanners(this is a list of multiple scanners i will only using nmap, zap, nikto)
-#helm upgrade --install amass oci://ghcr.io/securecodebox/helm/amass
-#helm upgrade --install gitleaks oci://ghcr.io/securecodebox/helm/gitleaks
-#helm upgrade --install kube-hunter oci://ghcr.io/securecodebox/helm/kube-hunter
-helm upgrade --install nikto oci://ghcr.io/securecodebox/helm/nikto
 helm upgrade --install nmap oci://ghcr.io/securecodebox/helm/nmap
-#helm upgrade --install ssh-audit oci://ghcr.io/securecodebox/helm/ssh-audit
-#helm upgrade --install sslyze oci://ghcr.io/securecodebox/helm/sslyze
-#helm upgrade --install trivy oci://ghcr.io/securecodebox/helm/trivy
-#helm upgrade --install wpscan oci://ghcr.io/securecodebox/helm/wpscan
-helm upgrade --install zap oci://ghcr.io/securecodebox/helm/zap
+helm upgrade --install cascading-scans oci://ghcr.io/securecodebox/helm/cascading-scans
 helm upgrade --install zap-advanced oci://ghcr.io/securecodebox/helm/zap-advanced
+cat <<EOF | helm upgrade --install ncrack oci://ghcr.io/securecodebox/helm/ncrack --values -
+scannerJob:
+  extraVolumes:
+    - name: ncrack-lists
+      secret:
+        secretName: ncrack-lists
+  extraVolumeMounts:
+    - name: ncrack-lists
+      mountPath: "/ncrack/"
+cascadingRules:
+  enabled: true
+EOF
 # Listing installed scanners "kubectl get scantypes"
 
 
 # Installing Vulnerable Scanning Targets 
 
 ## Installing juice-shop-app
-kubectl create namespace juice-shop-app
-helm upgrade --install juice-shop oci://ghcr.io/securecodebox/helm/juice-shop --namespace juice-shop-app 
-kubectl apply -f juice-shop-ingress.yaml # alternativly we can use a port forwarding with "kubectl --namespace juice-shop-app port-forward service/juice-shop 3000:3000"
-kubectl describe ingress juice-shop-ingress -n juice-shop-app
+#kubectl create namespace juice-shop-app
+helm upgrade --install juice-shop oci://ghcr.io/securecodebox/helm/juice-shop #--namespace juice-shop-app 
+
+# Apply port forwarding to access the app on localhost with "kubectl --namespace juice-shop-app port-forward service/juice-shop 3000:3000"
+# kubectl apply -f juice-shop-ingress.yaml 
+# kubectl describe ingress juice-shop-ingress -n juice-shop-app
+
+## Installing the ol-wordpress-app
+#kubectl create namespace old-wordpress-app
+helm upgrade --install old-wordpress oci://ghcr.io/securecodebox/helm/old-wordpress #--namespace old-wordpress-app
 
 
-kubectl create namespace old-wordpress-app
-helm upgrade --install old-wordpress oci://ghcr.io/securecodebox/helm/old-wordpress --namespace old-wordpress-app
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

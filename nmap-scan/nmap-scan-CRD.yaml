@@ -1,11 +1,22 @@
 apiVersion: "execution.securecodebox.io/v1"
 kind: Scan
 metadata:
-  name: "nmap-scanme.nmap.org"
+  name: "nmap-ssh-howto"
 spec:
   scanType: "nmap"
   parameters:
-    - scanme.nmap.org
+    # Service Detection enabled
+    - "-sV"
+    # We'll just scan for port 22 to speed up the scan.
+    - "-p"
+    - "22"
+    # Watch out to configure you network correctly and if you are allowed to perform scans against the hosts in it!
+    - "192.168.178.0/24"
+  cascades:
+    matchLabels:
+      securecodebox.io/intensive: high
+      securecodebox.io/invasive: invasive
+
 
 # Running the scan with "kubectl apply -f nmap-scan-cdr.yaml" 
 # Track it with "kubectl get scans" 

@@ -1,9 +1,33 @@
 # SecureCodeBox Penetration Testing Pipeline on a Kind Cluster
 
+## Juice Shop Target
 
+### Juice Shop is a vulnerable web application that i will perform two type of scans
+
+#### the ZAP-Advenced Scan which will retrieve a finding.json finding 
+
+````
+kubectl apply -f zap-advenced-scan-crd.yaml
+```
+
+#### Running Nmap scanning and ssh port cracking with Ncrack
+
+First let's create a secret to hold dictionaries to use in brute forcing 
+
+```
+printf "root\nadmin\n" > users.txt
+printf "THEPASSWORDYOUCREATED\n123456\npassword\n" > passwords.txt
+```
+
+```
+kubectl create secret generic --from-file users.txt --from-file passwords.txt ncrack-lists
+```
+
+
+********************************************************************************************
 ### Commands Playbook 
 Listing SCB pods running:
-    sudo kubectl get pods -n securecodebox-system
+    sudo kubectl get pods -n securecodebox-system 
 
 Listing SCB services:
     sudo kubectl get svc -n securecodebox-system
@@ -34,4 +58,5 @@ Creating a unique namespace for each vulnerable apps:
 
 Checking the ingress controller service:
     kubectl get svc -n ingress-nginx
+
 
