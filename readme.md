@@ -6,7 +6,7 @@
 
 #### the ZAP-Advenced Scan which will retrieve a finding.json finding 
 
-````
+```
 kubectl apply -f zap-advenced-scan-crd.yaml
 ```
 
@@ -59,4 +59,6 @@ Creating a unique namespace for each vulnerable apps:
 Checking the ingress controller service:
     kubectl get svc -n ingress-nginx
 
+Getting the services IPs in the cluster:
+    kubectl describe svc
 
