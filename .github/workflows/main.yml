@@ -1,0 +1,221 @@
+name: SecureCodeBox Penetration Tests
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  penetration-tests:
+    runs-on: ubuntu-latest
+    env:
+      TARGET_APP: juice-shop # first change to the app name to trigger the pipeline and review scan results 
+      TARGET_APP_HELM: oci://ghcr.io/securecodebox/helm/juice-shop
+      SCANNER: zap-advanced
+      SCANNER_HELM: oci://ghcr.io/securecodebox/helm/zap-advanced
+      SCAN_NAME: zap-authenticated-full-scan-juiceshop
+      
+    steps:
+      # Step 1: Set up Kubernetes Kind cluster
+      - name: Set up kind cluster
+        uses: engineerd/setup-kind@v0.5.0
+        with:
+          version: "v0.17.0"
+
+      # Step 2: Configure kubectl
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: v1.27.1
+          
+      # Step 3: checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 4: Install Helm for SecureCodeBox operator installation
+      - name: Install Helm
+        uses: azure/setup-helm@v1
+        with:
+          version: v3.8.0
+
+      # Step 5: Deploy SecureCodeBox Operator using Helm from the OCI registry
+      - name: Deploy SecureCodeBox
+        run: |
+          helm --namespace securecodebox-system upgrade --install --create-namespace securecodebox-operator oci://ghcr.io/securecodebox/helm/operator
+
+    # Step 6: Deploy Juice-Shop demo target
+      - name: Deploy Juice-Shop Demo Target
+        run: |
+          helm upgrade --install $TARGET_APP $TARGET_APP_HELM
+
+      # Step 7: Deploy ZAP-Advanced scanner
+      - name: Deploy ZAP-Advanced Scanner
+        run: |
+          helm upgrade --install $SCANNER $SCANNER_HELM
+
+      # Step 8: Initiate ZAP Scan on the Juice-Shop target
+      - name: Apply scan.yaml
+        run: kubectl apply -f ./scan.yaml
+
+      # Step 9: Wait for ZAP Scan Completion
+      - name: Wait for ZAP Scan Results
+        run: |
+          # Poll for the scan state to become "Done"
+          while true; do
+            # Fetch the scan status and check for "Done" state
+            scan_state=$(kubectl get scan "$SCAN_NAME" -o=jsonpath='{.status.state}')
+      
+            # Print the current scan state for debugging
+            echo "Current scan state: $scan_state"
+      
+            # Break out of loop if scan is done
+            if [[ "$scan_state" == "Done" ]]; then
+              echo "Scan completed!"
+              break
+            fi
+      
+            # Wait 30 seconds before checking again
+            sleep 30
+          done
+          
+      # Step 10: install jq
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      
+
+      # Step 11: Retrieve and save the ZAP scan results
+      - name: Retrieve ZAP Scan Results
+        run: |
+          kubectl port-forward -n securecodebox-system service/securecodebox-operator-minio 9000:9000 &
+          sleep 5
+
+          curl -O https://dl.min.io/client/mc/release/linux-amd64/mc
+          chmod +x mc
+          sudo mv mc /usr/local/bin
+
+          mc alias set local http://localhost:9000 admin password
+
+          scan_uid=$(kubectl get scan "$SCAN_NAME" -o=jsonpath='{.metadata.uid}')
+          # echo "SCAN_UID=${scan_uid}" >> $GITHUB_ENV
+          
+          scan_name=$(kubectl get scan "$SCAN_NAME" -o=jsonpath='{.metadata.name}')
+          scan_findings_categories=$(kubectl get scan "$SCAN_NAME" -o=jsonpath='{.status.findings.categories}')
+          scan_findings_categories=$(echo "$scan_findings_categories" | tr -d '\n')
+
+          scan_findings_count=$(kubectl get scan "$SCAN_NAME" -o=jsonpath='{.status.findings.count}')
+          scan_findings_count=$(echo "$scan_findings_count" | tr -d '\n')
+          scan_findings_count=${scan_findings_count:-0} # Default to 0 if empty
+          
+          echo "Scan findings count: $scan_findings_count"
+          echo "SCAN_FINDINGS_COUNT=$scan_findings_count" >> $GITHUB_ENV
+
+          echo "Categories: ${scan_findings_categories}"
+          echo "Count: ${scan_findings_count}"
+
+          # Check if findings count is zero
+          if [[ "$scan_findings_count" -eq 0 ]]; then
+            echo "No issues found. Pipeline passes."
+            exit 0
+          fi
+
+          # Create summary file and findings file
+          summary_file="$GITHUB_WORKSPACE/report-summary.json"
+          echo "SUMMARY_FILE=${summary_file}" >> $GITHUB_ENV
+          echo "{
+            \"scan_name\": \"${scan_name}\",
+            \"scan_uid\": \"${scan_uid}\",
+            \"findings\": {
+              \"count\": ${scan_findings_count},
+              \"categories\": ${scan_findings_categories}
+            }
+          }" > ${summary_file}
+          
+          mc cp local/securecodebox/scan-${scan_uid}/findings.json $GITHUB_WORKSPACE/findings.json
+          
+          echo "Reports saved locally."
+
+      # Step 12: configure the user that will commit the reports in the repo  
+      - name: Configure Git
+        if: env.SCAN_FINDINGS_COUNT != '0' # Ensures this step is skipped if count is 0
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      # Step 13: Retrieve the Baseline Report
+      - name: Retrieve Baseline Report
+        if: env.SCAN_FINDINGS_COUNT != '0' # Ensures this step is skipped if count is 0
+        run: |
+          BASELINE_DIR="$GITHUB_WORKSPACE/baseline"
+          mkdir -p "$BASELINE_DIR"
+  
+          # Copy the baseline report from the repository to the temporary directory
+          git ls-files | grep '^report-summary\.json$' | xargs -I{} cp {} "$BASELINE_DIR/"
+  
+          BASELINE_REPORT="$BASELINE_DIR/report-summary.json"
+          if [[ ! -f "$BASELINE_REPORT" ]]; then
+            echo "::warning::No baseline report found. Skipping comparison. Treating as new issues."
+            mv "$SUMMARY_FILE" "$BASELINE_DIR/report-summary.json"
+            git add "$BASELINE_DIR/report-summary.json" findings.json
+            git commit -m "Set initial baseline report"
+            git push
+            exit 1
+          fi
+          echo "Baseline report located at: $BASELINE_REPORT"
+
+      # Step 14: Check for Baseline and Compare Reports
+      - name: Check Baseline and Compare
+        if: env.SCAN_FINDINGS_COUNT != '0' # Ensures this step is skipped if count is 0
+        run: |
+          BASELINE_REPORT="$GITHUB_WORKSPACE/baseline/report-summary.json"
+          CURRENT_REPORT="$SUMMARY_FILE"
+  
+          BASELINE_CATEGORIES=$(jq -r '.findings.categories | keys[]' "$BASELINE_REPORT")
+          CURRENT_CATEGORIES=$(jq -r '.findings.categories | keys[]' "$CURRENT_REPORT")
+  
+          echo "Baseline found. Proceeding with comparison."
+          echo "Comparing $CURRENT_REPORT with $BASELINE_REPORT"
+
+          echo "Baseline Categories: $BASELINE_CATEGORIES"
+          echo "Current Categories: $CURRENT_CATEGORIES"
+
+          # Loop through current categories
+          echo "$CURRENT_CATEGORIES" | while IFS= read -r category; do
+            if ! echo "$BASELINE_CATEGORIES" | grep -Fxq "$category"; then
+              echo "::warning::New category detected: $category"
+            else
+              BASELINE_COUNT=$(jq -r ".findings.categories[\"$category\"]" "$BASELINE_REPORT")
+              CURRENT_COUNT=$(jq -r ".findings.categories[\"$category\"]" "$CURRENT_REPORT")
+              if [[ "$CURRENT_COUNT" -gt "$BASELINE_COUNT" ]]; then
+                echo "::warning::Category '$category' count increased from $BASELINE_COUNT to $CURRENT_COUNT."
+              elif [[ "$CURRENT_COUNT" -lt "$BASELINE_COUNT" ]]; then
+                echo "::warning::Category '$category' count decreased from $BASELINE_COUNT to $CURRENT_COUNT. Improvement noted. Issue Still persists"
+              else
+                echo "::warning::Category '$category' count remains the same: $CURRENT_COUNT. Persistent issue."
+              fi
+            fi
+          done
+          
+          # Loop through baseline categories
+          echo "$BASELINE_CATEGORIES" | while IFS= read -r baseline_category; do
+            if ! echo "$CURRENT_CATEGORIES" | grep -Fxq "$baseline_category"; then
+              echo "::notice::Category '$baseline_category' is no longer present. Improvement noted."
+            fi
+          done
+
+      # Step 15: save the reports in the repo and fail the pipeline
+      - name: Save Reports and Fail Pipeline
+        if: env.SCAN_FINDINGS_COUNT != '0' # Ensures this step is skipped if count is 0
+        run: |
+          BASELINE_REPORT="$GITHUB_WORKSPACE/baseline/report-summary.json"
+          CURRENT_REPORT="$SUMMARY_FILE"
+  
+          mv "$CURRENT_REPORT" "$BASELINE_REPORT"
+          git add "$BASELINE_REPORT" findings.json
+          git commit -m "Update findings and report summaries [skip ci]" || echo "No changes to commit"
+          git push
+          echo "::error::Pipeline failed due to security issues."
+          exit 1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
