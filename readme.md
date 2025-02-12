@@ -22,6 +22,13 @@ printf "THEPASSWORDYOUCREATED\n123456\npassword\n" > passwords.txt
 ```
 kubectl create secret generic --from-file users.txt --from-file passwords.txt ncrack-lists
 ```
+#### Running SemGreb scan on a public Github repo
+
+I will be using a simple calculator program written in C programming language 
+
+```
+kubectl apply -f calculator-scan-semgrep-cdr.yaml
+```
 
 
 ********************************************************************************************

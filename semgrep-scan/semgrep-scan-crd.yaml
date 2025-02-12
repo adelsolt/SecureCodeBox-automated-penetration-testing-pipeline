@@ -1,0 +1,34 @@
+apiVersion: "execution.securecodebox.io/v1"
+kind: Scan
+metadata:
+  name: "semgrep-vulnerable-calculator"
+spec:
+  # Specify a Kubernetes volume that will be shared between the scanner and the initContainer
+  volumes:
+    - name: repository
+      emptyDir: {}
+  # Mount the volume in the scan container
+  volumeMounts:
+    - mountPath: "/repo/"
+      name: repository
+  # Specify an init container to clone the repository
+  initContainers:
+    - name: "provision-git"
+      # Use an image that includes git
+      image: bitnami/git
+      # Mount the same volume we also use in the main container
+      volumeMounts:
+        - mountPath: "/repo/"
+          name: repository
+      # Specify the clone command and clone into the volume, mounted at /repo/
+      command:
+        - git
+        - clone
+        - "https://github.com/ManyamSanjayKumarReddy/Basic-Projects-in-C-Programming"
+        - /repo/flask-app
+  # Parameterize the semgrep scan itself
+  scanType: "semgrep"
+  parameters:
+    - "-c"
+    - "p/ci"
+    - "/repo/calculator-program"

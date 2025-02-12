@@ -76,6 +76,9 @@ scannerJob:
 cascadingRules:
   enabled: true
 EOF
+helm upgrade --install semgrep oci://ghcr.io/securecodebox/helm/semgrep
+
+
 # Listing installed scanners "kubectl get scantypes"
 
 
