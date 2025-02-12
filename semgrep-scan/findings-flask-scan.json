@@ -1,0 +1,9 @@
+[{"name":"python.jwt.security.jwt-hardcode.jwt-python-hardcoded-secret",
+"location":"/repo/flask-app/app/app.py:184-184",
+"description":"Hardcoded JWT secret or private key is used. This is a Insufficiently Protected Credentials weakness: https://cwe.mitre.org/data/definitions/522.html Consider using an appropriate security mechanism to protect the credentials (e.g. keeping secrets in environment variables)","category":"security",
+"severity":"HIGH","attributes":{"cwe":["CWE-522: Insufficiently Protected Credentials"],
+"owasp_category":["A02:2017 - Broken Authentication","A04:2021 - Insecure Design"],
+"references":[{"type":"URL","value":"https://semgrep.dev/blog/2020/hardcoded-secrets-unverified-tokens-and-other-common-jwt-mistakes/"},
+{"type":"CWE","value":"CWE-52"},{"type":"URL","value":"https://cwe.mitre.org/data/definitions/52.html"}],
+"rule_source":"https://semgrep.dev/r/python.jwt.security.jwt-hardcode.jwt-python-hardcoded-secret"},
+"id":"2efe678c-7eab-489b-90d5-68f5e428d043","parsed_at":"2025-02-12T11:18:03.138Z"}]

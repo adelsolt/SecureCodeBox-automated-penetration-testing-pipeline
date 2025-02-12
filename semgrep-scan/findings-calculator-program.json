@@ -1,0 +1,11 @@
+{"version":"1.106.0",
+"results":[],
+"errors":[],
+"paths":{"scanned":["/repo/calculator-program/Calculator.c",
+"/repo/calculator-program/ContactManagementSystem.c",
+"/repo/calculator-program/HangmanGame.c",
+"/repo/calculator-program/LibraryManagementSystem.c",
+"/repo/calculator-program/NumberGuess.c",
+"/repo/calculator-program/README.md",
+"/repo/calculator-program/StudentGradeBook.c"]},
+"skipped_rules":[]}

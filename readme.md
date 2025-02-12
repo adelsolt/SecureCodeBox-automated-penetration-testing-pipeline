@@ -1,6 +1,5 @@
 # SecureCodeBox Penetration Testing Pipeline on a Kind Cluster
 
-## Juice Shop Target
 
 ### Juice Shop is a vulnerable web application that i will perform two type of scans
 
@@ -24,10 +23,16 @@ kubectl create secret generic --from-file users.txt --from-file passwords.txt nc
 ```
 #### Running SemGreb scan on a public Github repo
 
-I will be using a simple calculator program written in C programming language 
+I will be using a secure simple calculator program written in C programming language 
 
 ```
 kubectl apply -f calculator-scan-semgrep-cdr.yaml
+```
+
+Then I will be using a Vulnerable Flask app 
+
+```
+kubectl apply -f flask-scan-semgrep-cdr.yaml
 ```
 
 
