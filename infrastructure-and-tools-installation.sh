@@ -77,6 +77,8 @@ cascadingRules:
   enabled: true
 EOF
 helm upgrade --install semgrep oci://ghcr.io/securecodebox/helm/semgrep
+helm upgrade --install wpscan oci://ghcr.io/securecodebox/helm/wpscan
+helm upgrade --install whatweb oci://ghcr.io/securecodebox/helm/whatweb
 
 
 # Listing installed scanners "kubectl get scantypes"

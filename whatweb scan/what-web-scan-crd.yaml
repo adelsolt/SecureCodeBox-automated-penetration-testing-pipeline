@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: the secureCodeBox authors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: "execution.securecodebox.io/v1"
+kind: Scan
+metadata:
+  name: "whatweb-old-wordpress"
+spec:
+  scanType: "whatweb"
+  parameters:
+    - http://old-wordpress.default.svc:80/

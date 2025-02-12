@@ -3,7 +3,7 @@
 
 ### Juice Shop is a vulnerable web application that i will perform two type of scans
 
-#### the ZAP-Advenced Scan which will retrieve a finding.json finding 
+#### Running ZAP-Advenced Scan on the Juiceshop web app Target
 
 ```
 kubectl apply -f zap-advenced-scan-crd.yaml
@@ -29,11 +29,27 @@ I will be using a secure simple calculator program written in C programming lang
 kubectl apply -f calculator-scan-semgrep-cdr.yaml
 ```
 
-Then I will be using a Vulnerable Flask app 
+Then I will be using a Vulnerable Flask app  as a target
 
 ```
 kubectl apply -f flask-scan-semgrep-cdr.yaml
 ```
+
+#### Running WPS scan on the old wordpress web app target
+
+```
+kubectl apply -f wps-scan-cdr.yaml
+```
+
+
+#### Running WhatWeb scan on the old wordpress web app
+
+```
+kubectl apply -f whatweb-scan-cdr.yaml
+```
+
+
+
 
 
 ********************************************************************************************

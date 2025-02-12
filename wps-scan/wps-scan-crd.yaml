@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: the secureCodeBox authors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: "execution.securecodebox.io/v1"
+kind: Scan
+metadata:
+  name: "wpscan-www.example.com"
+spec:
+  scanType: "wpscan"
+  parameters:
+    - "--url"
+    - old-wordpress
+    - "-e"
+    - "vp"
+    - "--plugins-detection"
+    - "mixed"
+    - "--api-token"
+    - "TODO"
